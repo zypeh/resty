@@ -7,6 +7,7 @@ package resty
 import (
 	"bytes"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -305,6 +306,28 @@ func TestPostJSONMapInvalidResponseJson(t *testing.T) {
 	authSuccess := resp.Result().(*AuthSuccess)
 	assertEqual(t, "", authSuccess.ID)
 	assertEqual(t, "", authSuccess.Message)
+
+	t.Logf("Result Success: %q", resp.Result().(*AuthSuccess))
+
+	logResponse(t, resp)
+}
+
+func TestPostJSONForGH240(t *testing.T) {
+	ts := createPostServer(t)
+	defer ts.Close()
+
+	c := dc()
+	c.SetDebug(false)
+
+	resp, err := c.R().
+		SetBody(map[string]interface{}{"username": "testuser", "password": "testpass"}).
+		SetResult(AuthSuccess{}).
+		Post(ts.URL + "/login-json-html")
+	fmt.Println(err, resp.StatusCode(), resp)
+	fmt.Println(resp.Result())
+
+	assertError(t, err)
+	assertEqual(t, http.StatusOK, resp.StatusCode())
 
 	t.Logf("Result Success: %q", resp.Result().(*AuthSuccess))
 
